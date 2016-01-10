@@ -8,7 +8,7 @@ URL = ("http://", "127.0.0.1", ":", "8080", "/")
 # These tests need to be run in order
 
 
-def test_01_create_user():
+def test_01_create_user_1():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Create user
     params = {'name': 'gert', 'mailAddress': 'gertMail'}
@@ -188,3 +188,213 @@ def test_12_invalid_json():
     result = json.loads(r.text)
     assert 'message' in result
     assert result['message'] == "Unexpected token }"
+
+
+def test_13_create_user_2():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    # Create user
+    params = {'name': 'bar', 'mailAddress': 'barMail'}
+    r = requests.post(''.join(URL + ('user',)), headers=headers, data=json.dumps(params))
+    assert r.status_code == 201
+    assert r.encoding == 'utf-8'
+    result = json.loads(r.text)
+    assert {'id',
+            'name',
+            # 'mailAddress',  # appears to not be send
+            'balance',
+            'lastTransaction'}.issubset(result)
+    assert result['name'] == 'bar'
+    assert result['id'] == 2
+    assert result['balance'] == 0
+    assert result['lastTransaction'] is None
+
+
+def test_14_list_two_users():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', )), headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    users = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(users)
+    assert users['overallCount'] == 2
+    assert users['limit'] is None
+    assert users['offset'] is None
+    entries = users['entries']
+    assert isinstance(entries, list)
+    assert len(entries) == 2
+    assert {'id', 'name', 'balance', 'lastTransaction'}.issubset(entries[0])
+    assert {'id', 'name', 'balance', 'lastTransaction'}.issubset(entries[1])
+    assert entries[0]['name'] == 'gert'
+    assert entries[0]['id'] == 1
+    assert entries[1]['name'] == 'bar'
+    assert entries[1]['id'] == 2
+
+
+def test_15_list_users_empty_offset():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', )), headers=headers, params={'offset': 2, 'limit': 1})
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    users = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(users)
+    assert users['overallCount'] == 2
+    assert users['limit'] == 1
+    assert users['offset'] == 2
+    assert users['entries'] == []
+
+
+def test_16_load_user_by_id():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '1')), headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    user = json.loads(r.text)
+    print(user)
+    assert {'name', 'id', 'balance', 'lastTransaction', 'transactions'}.issubset(user)
+    assert user['name'] == 'gert'
+    assert user['id'] == 1
+    assert user['balance'] == 23
+    assert user['lastTransaction'] is not None
+    transactions = user['transactions']
+    for entry in transactions:
+        assert {'id', 'userId', 'createDate', 'value'}.issubset(entry)
+        assert entry['value'] in [11, 12]
+        assert entry['userId'] == 1
+
+
+def test_17_load_transactions():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('transaction',)), headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
+    assert transactions['overallCount'] == 2
+    assert transactions['offset'] is None
+    assert transactions['limit'] is None
+    assert isinstance(transactions['entries'], list)
+    entries = transactions['entries']
+    for entry in entries:
+        assert entry['value'] in [11, 12]
+        assert entry['userId'] == 1
+
+
+def test_18_load_transactions():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('transaction',)), headers=headers, params={'offset': 1, 'limit': 1})
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
+    assert transactions['overallCount'] == 2
+    assert transactions['offset'] == 1
+    assert transactions['limit'] == 1
+    assert isinstance(transactions['entries'], list)
+    entries = transactions['entries']
+    for entry in entries:
+        assert entry['value'] == 11
+        assert entry['userId'] == 1
+
+
+def test_19_load_user_transactions_1():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '1', '/', 'transaction',)),
+                     headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
+    assert transactions['overallCount'] == 2
+    assert transactions['offset'] is None
+    assert transactions['limit'] is None
+    assert isinstance(transactions['entries'], list)
+    entries = transactions['entries']
+    for entry in entries:
+        assert entry['value'] in [11, 12]
+        assert entry['userId'] == 1
+
+
+def test_20_load_user_transactions_2():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '2', '/', 'transaction',)),
+                     headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
+    assert transactions['overallCount'] == 0
+    assert transactions['offset'] is None
+    assert transactions['limit'] is None
+    assert transactions['entries'] == []
+
+
+def test_21_load_user_transactions_offset_1():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '1', '/', 'transaction',)),
+                     headers=headers,
+                     params={'limit': 1})
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
+    assert transactions['overallCount'] == 2
+    assert transactions['offset'] == 0
+    assert transactions['limit'] == 1
+    assert isinstance(transactions['entries'], list)
+    entries = transactions['entries']
+    for entry in entries:
+        assert entry['value'] == 12
+        assert entry['userId'] == 1
+
+
+def test_22_load_user_transactions_offset_2():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '1', '/', 'transaction',)),
+                     headers=headers,
+                     params={'offset': 1, 'limit': 1})
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transactions = json.loads(r.text)
+    assert transactions['overallCount'] == 2
+    assert transactions['offset'] == 1
+    assert transactions['limit'] == 1
+    assert isinstance(transactions['entries'], list)
+    entries = transactions['entries']
+    for entry in entries:
+        assert {'id', 'userId', 'createDate', 'value'}.issubset(entry)
+        assert entry['value'] == 11
+        assert entry['userId'] == 1
+
+
+def test_23_load_user_transactions_single():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('user', '/', '1', '/', 'transaction', '/', '1',)),
+                     headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    transaction = json.loads(r.text)
+    assert {'id', 'userId', 'createDate', 'value'}.issubset(transaction)
+    assert transaction['id'] == 1
+    assert transaction['userId'] == 1
+    assert transaction['value'] == 11
+
+
+def test_24_metrics():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    r = requests.get(''.join(URL + ('metrics',)),
+                     headers=headers)
+    assert r.status_code == 200
+    assert r.encoding == 'utf-8'
+    metrics = json.loads(r.text)
+    assert {'overallBalance', 'countTransactions', 'avgBalance', 'countUsers', 'days'}.issubset(metrics)
+    assert metrics['overallBalance'] == 23
+    assert metrics['avgBalance'] == 23
+    assert metrics['countUsers'] == 2
+    assert metrics['countTransactions'] == 2
+    assert isinstance(metrics['days'], list)
+    assert len(metrics['days']) == 4
+    current_day = metrics['days'][3]
+    assert current_day['dayBalance'] == 23
+    assert current_day['overallNumber'] == 2
+    assert current_day['distinctUsers'] == 1
+
