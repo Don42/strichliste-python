@@ -12,6 +12,10 @@ user_parser.add_argument('mailAddress')
 transaction_parser = reqparse.RequestParser()
 user_parser.add_argument('value')
 
+list_parser = reqparse.RequestParser()
+user_parser.add_argument('offset')
+user_parser.add_argument('limit')
+
 
 class Setting(Resource):
 
@@ -22,13 +26,20 @@ class Setting(Resource):
 class UserList(Resource):
 
     def get(self):
-        return {'overallCount': 0, 'limit': None, 'offset': None, 'entries': []}
+        args = list_parser.parse_args()
+        limit = args.get('limit', None)
+        offset = args.get('offset', None)
+        return {'overallCount': 0, 'limit': limit, 'offset': offset, 'entries': []}
 
     def post(self):
         args = user_parser.parse_args()
-        if not {'mailAddress', 'name'}.issubset(args):
+        name = args.get('name')
+        mail_address = args.get('mailAddress')
+        if name is None or mail_address is None:
             return create_error(400, "name missing")
-        return {'id': 1, 'name': 'gert', 'balance': 0, 'lastTransaction': None}
+
+        return {'id': 1, 'name': name, 'mailAddress': mail_address,
+                'balance': 0, 'lastTransaction': None}
 
 
 class User(Resource):
@@ -37,9 +48,12 @@ class User(Resource):
         return create_error(404, "user {} not found".format(user_id))
 
 
-class UserTransaction(Resource):
+class UserTransactionList(Resource):
 
     def get(self, user_id):
+        args = list_parser.parse_args()
+        limit = args.get('limit', None)
+        offset = args.get('offset', None)
         return create_error(404, "user {} not found".format(user_id))
 
     def post(self, user_id):
@@ -51,6 +65,12 @@ class UserTransaction(Resource):
             return create_error(400, "not a number: {}".format(value))
         if value == 0:
             return create_error(400, "value must not be zero")
+        return create_error(404, "user {} not found".format(user_id))
+
+
+class UserTransaction(Resource):
+
+    def get(self, user_id, transaction_id):
         return create_error(404, "user {} not found".format(user_id))
 
 
@@ -66,6 +86,7 @@ class Transaction(Resource):
 api.add_resource(Setting, '/settings')
 api.add_resource(UserList, '/user')
 api.add_resource(User, '/user/<user_id>')
+api.add_resource(UserTransactionList, '/user/<user_id>/transaction/<transaction_id>')
 api.add_resource(UserTransaction, '/user/<user_id>/transaction')
 api.add_resource(Transaction, '/transaction')
 
