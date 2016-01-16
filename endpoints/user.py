@@ -1,17 +1,27 @@
 import numbers
 
 from flask_restful import Resource
-from strichliste import list_parser, user_parser
-from endpoints import create_error
+from endpoints import list_parser, user_parser, create_error
+
+import database.sqlalchemy_declarative as mapping
+import sqlalchemy.exc
 
 
 class UserList(Resource):
+
+    def __init__(self, **kwargs):
+        self.session = kwargs['db']
 
     def get(self):
         args = list_parser.parse_args()
         limit = args.get('limit', None)
         offset = args.get('offset', None)
-        return {'overallCount': 0, 'limit': limit, 'offset': offset, 'entries': []}
+        count = self.session.query(mapping.User).count()
+        result = self.session.query(mapping.User).offset(offset).limit(limit).all()
+        entries = [x.dict() for x in result]
+
+        return {'overallCount': count, 'limit': limit,
+                'offset': offset, 'entries': entries}
 
     def post(self):
         args = user_parser.parse_args()
@@ -20,8 +30,17 @@ class UserList(Resource):
         if name is None or mail_address is None:
             return create_error(400, "name missing")
 
-        return {'id': 1, 'name': name, 'mailAddress': mail_address,
-                'balance': 0, 'lastTransaction': None}
+        user = mapping.User(name=name, mailAddress=mail_address)
+        try:
+            self.session.add(user)
+            self.session.commit()
+        except sqlalchemy.exc.IntegrityError as e:
+            # TODO Logging
+            return create_error(409, "user {} already exists".format(user.name))
+
+        return {'id': user.id, 'name': user.name,
+                'mailAddress': user.mailAddress,
+                'balance': 0, 'lastTransaction': None}, 201
 
 
 class User(Resource):
