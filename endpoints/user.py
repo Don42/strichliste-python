@@ -50,7 +50,9 @@ class User(Resource):
             user = models.User.query.get(user_id)
             if user is None:
                 return create_error(404, "user {} not found".format(user_id))
-            return user.dict(), 200
+            out_dict = user.dict()
+            out_dict['transaction'] = [x.dict() for x in user.transactions]
+            return out_dict, 200
         except sqlalchemy.exc.SQLAlchemyError as e:
             # TODO Logging
             return create_error(500, "Internal Error")

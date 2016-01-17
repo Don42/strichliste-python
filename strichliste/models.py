@@ -23,21 +23,25 @@ class User(db.Model):
     @property
     def balance(self) -> decimal.Decimal:
         ret = db.session.query(sa.func.sum(Transaction.value)).filter(
-                Transaction.userId == self.id).one()
-        if ret[0] is None:
+                Transaction.userId == self.id).first()
+        if ret is None:
             ret = 0
         else:
             ret = ret[0]
-        return round(decimal.Decimal(ret) / 100, 2)
+        return round(decimal.Decimal(ret if ret is not None else 0) / 100, 2)
+
+    @property
+    def lastTransaction(self):
+        ret = Transaction.query.filter(Transaction.userId == self.id).order_by(
+            Transaction.createDate.desc()).first()
+        return ret.createDate.isoformat() if ret is not None else None
 
     def __repr__(self):
         return "User: id: {id}, name: {name}".format(id=self.id, name=self.name)
 
     def dict(self):
-        transactions = [x.dict() for x in self.transactions]
-        return {'id': self.id, 'name': self.name, 'createDate': self.createDate.isoformat(),
-                'mailAddress': self.mailAddress, 'active': self.active, 'transactions': transactions,
-                'balance': str(self.balance)}
+        return {'id': self.id, 'name': self.name, 'balance': str(self.balance),
+                'lastTransaction': self.lastTransaction}
 
 
 class Transaction(db.Model):
