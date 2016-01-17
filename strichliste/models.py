@@ -2,7 +2,10 @@ import decimal
 import datetime
 
 from database import db
+
+import sqlalchemy as sa
 from sqlalchemy.orm import relationship
+from sqlalchemy_utils import aggregated
 
 TWO_PLACES = decimal.Decimal("0.01")
 CONTEXT = decimal.getcontext()
@@ -16,6 +19,12 @@ class User(db.Model):
     createDate = db.Column(db.DATETIME, default=datetime.datetime.utcnow())
     active = db.Column(db.INTEGER, default=1, nullable=False)
     mailAddress = db.Column(db.TEXT)
+    transactions = relationship('Transaction', back_populates='user')
+
+    @aggregated('transactions', db.Column(db.INTEGER))
+    def balance(self):
+        # round(decimal.Decimal(val) / 100, 2)
+        return sa.func.sum(Transaction.value)
 
     def __repr__(self):
         return "User: id: {id}, name: {name}".format(id=self.id, name=self.name)
@@ -51,7 +60,6 @@ class Transaction(db.Model):
         return decimal.Decimal(self.value) / 100
 
 
-User.transactions = relationship('Transaction', order_by=Transaction.id, back_populates='user')
 
 
 class Meta(db.Model):
