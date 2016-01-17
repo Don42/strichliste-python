@@ -1,6 +1,6 @@
 import datetime
 
-from strichliste.flask import db
+from database import db
 
 
 class User(db.Model):

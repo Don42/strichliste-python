@@ -2,7 +2,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import database.sqlalchemy_declarative as data_objects
-
+from flask_sqlalchemy import SQLAlchemy
 
 _session = None
 
@@ -20,3 +20,6 @@ def get_database(path):
         global _session
         _session = DBSession()
     return _session
+
+
+db = SQLAlchemy()

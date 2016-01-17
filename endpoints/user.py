@@ -5,7 +5,7 @@ from endpoints import list_parser, user_parser, create_error
 
 import sqlalchemy.exc
 
-from strichliste.flask import db
+from database import db
 import strichliste.models as models
 
 
