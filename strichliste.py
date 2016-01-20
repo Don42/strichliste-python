@@ -17,8 +17,8 @@ def main():
     api.add_resource(Setting, '/settings')
     api.add_resource(UserList, '/user')
     api.add_resource(User, '/user/<user_id>')
-    api.add_resource(UserTransactionList, '/user/<user_id>/transaction/<transaction_id>')
-    api.add_resource(UserTransaction, '/user/<user_id>/transaction')
+    api.add_resource(UserTransactionList, '/user/<user_id>/transaction')
+    api.add_resource(UserTransaction, '/user/<user_id>/transaction/<transaction_id>')
     api.add_resource(Transaction, '/transaction')
 
     if not DB_PATH.exists():
