@@ -58,7 +58,7 @@ class Transaction(db.Model):
 
     @value_dec.setter
     def value_dec(self, value: decimal.Decimal):
-        self.value = value.quantize(TWO_PLACES).shift(2).to_integral_exact()
+        self.value = int(value.quantize(TWO_PLACES).shift(2).to_integral_exact())
 
     def dict(self):
         return {'id': self.id, 'userId': self.userId,

@@ -1,7 +1,7 @@
-import numbers
+import numbers, decimal
 
 from flask_restful import Resource
-from endpoints import list_parser, user_parser, create_error
+from endpoints import list_parser, user_parser, transaction_parser, create_error
 
 import sqlalchemy.exc
 
@@ -74,12 +74,37 @@ class UserTransactionList(Resource):
                 'offset': offset, 'entries': entries}
 
     def post(self, user_id):
-        args = user_parser.parse_args()
-        if not {'value'}.issubset():
+        args = transaction_parser.parse_args()
+        if 'value' not in args:
             return create_error(400, "value missing")
-        value = args['value']
+        raw_value = args['value']
+
+        try:
+            value = int(raw_value)
+        except ValueError:
+            try:
+                value = decimal.Decimal(raw_value)
+                value = int(value.quantize(models.TWO_PLACES).shift(2).to_integral_exact())
+            except ValueError as e:
+                # TODO Logging
+                print(e)
+
         if not isinstance(value, numbers.Number):
-            return create_error(400, "not a number: {}".format(value))
+            return create_error(400, "not a number: {}".format(raw_value))
         if value == 0:
             return create_error(400, "value must not be zero")
-        return create_error(404, "user {} not found".format(user_id))
+
+        user = models.User.query.get(user_id)
+        if user is None:
+            return create_error(404, "user {} not found".format(user_id))
+
+        transaction = models.Transaction(userId=user_id, value=value)
+        try:
+            db.session.add(transaction)
+            db.session.commit()
+        except sqlalchemy.exc.IntegrityError as e:
+            # TODO Logging
+            return create_error(404, "user {} not found".format(user_id))
+
+        return transaction.dict()
+
