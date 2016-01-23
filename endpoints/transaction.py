@@ -1,6 +1,9 @@
-from endpoints import create_error, list_parser
-from flask_restful import Resource
+import json
 
+from flask_restful import Resource
+from flask import make_response
+
+from endpoints import create_error, list_parser, HEADERS
 import strichliste.models as models
 
 
@@ -13,7 +16,9 @@ class UserTransaction(Resource):
         transaction = models.Transaction.query.get(transaction_id)
         if transaction is None or transaction.userId != user.id:
             return create_error(404, "transaction {} not found".format(transaction_id))
-        return transaction.dict()
+        resp = make_response(json.dumps(transaction.dict()), 200)
+        resp.headers.extend(HEADERS)
+        return resp
 
 
 class Transaction(Resource):
@@ -25,5 +30,7 @@ class Transaction(Resource):
         count = models.Transaction.query.count()
         result = models.Transaction.query.all()
         entries = [x.dict() for x in result]
-        return {'overallCount': count, 'limit': limit,
-                'offset': offset, 'entries': entries}
+        resp = make_response(json.dumps({'overallCount': count, 'limit': limit,
+                                         'offset': offset, 'entries': entries}), 200)
+        resp.headers.extend(HEADERS)
+        return resp
