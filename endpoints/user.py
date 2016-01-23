@@ -19,8 +19,7 @@ class UserList(Resource):
         limit = args.get('limit', None)
         offset = args.get('offset', None)
         count = models.User.query.count()
-        result = models.User.query.offset(offset).limit(limit).outerjoin(
-                models.User.transactions).all()
+        result = models.User.query.offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]
 
         resp = make_response(json.dumps({'overallCount': count, 'limit': limit,
