@@ -23,7 +23,7 @@ class UserList(Resource):
         entries = [x.dict() for x in result]
 
         resp = make_response(json.dumps({'overallCount': count, 'limit': limit,
-                              'offset': offset, 'entries': entries}), 200)
+                                         'offset': offset, 'entries': entries}), 200)
         resp.headers.extend(HEADERS)
         return resp
 
