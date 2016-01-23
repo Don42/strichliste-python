@@ -98,12 +98,11 @@ class UserTransactionList(Resource):
             try:
                 value = decimal.Decimal(raw_value)
                 value = int(value.quantize(models.TWO_PLACES).shift(2).to_integral_exact())
-            except ValueError as e:
+            except decimal.InvalidOperation as e:
                 # TODO Logging
                 print(e)
+                return create_error(400, "not a number: {}".format(raw_value))
 
-        if not isinstance(value, numbers.Number):
-            return create_error(400, "not a number: {}".format(raw_value))
         if value == 0:
             return create_error(400, "value must not be zero")
 
