@@ -49,7 +49,7 @@ class Transaction(db.Model):
     id = db.Column(db.INTEGER, primary_key=True, autoincrement=True)
     userId = db.Column(db.INTEGER, db.ForeignKey('users.id'), nullable=False, index=True)
     user = relationship("User", back_populates="transactions")
-    createDate = db.Column(db.DATETIME, default=datetime.datetime.utcnow())
+    createDate = db.Column(db.DATETIME, default=datetime.datetime.utcnow)
     value = db.Column(db.INTEGER, nullable=False)
 
     @property
