@@ -90,9 +90,18 @@ class UserTransactionList(Resource):
                 # TODO Logging
                 print(e)
                 return make_error_response("not a number: {}".format(raw_value), 400)
-
+        max_transaction = self.app.config['app_config'].upper_transaction_boundary
+        min_transaction = self.app.config['app_config'].lower_transaction_boundary
         if value == 0:
             return make_error_response("value must not be zero", 400)
+        elif value > max_transaction:
+            return make_error_response(
+                    "transaction value of {} exceeds the transaction maximum of {}".format(value, max_transaction),
+                    403)
+        elif value < min_transaction:
+            return make_error_response(
+                    "transaction value of {} falls below the transaction minimum of {}".format(value, min_transaction),
+                    403)
 
         user = models.User.query.get(user_id)
         if user is None:
