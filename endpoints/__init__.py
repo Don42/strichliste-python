@@ -1,6 +1,6 @@
-import json
 import flask
 
+from flask import jsonify
 from flask_restful import reqparse
 
 user_parser = reqparse.RequestParser()
@@ -22,7 +22,7 @@ def make_error_response(msg: str, code: int = 400):
 
 
 def make_response(data, code=200, headers=None):
-    resp = flask.make_response(json.dumps(data), code)
+    resp = flask.make_response(jsonify(data), code)
     resp.headers.extend(HEADERS)
     if headers is not None:
         resp.headers.extend(headers)
