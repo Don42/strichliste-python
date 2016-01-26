@@ -1,5 +1,3 @@
-import json
-
 from flask_restful import Resource
 
 from endpoints import make_error_response, make_response, list_parser

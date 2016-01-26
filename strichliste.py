@@ -1,4 +1,4 @@
-from configparser import ConfigParser, NoOptionError, NoSectionError
+from configparser import ConfigParser
 import pathlib as pl
 
 from flask_restful import Api
