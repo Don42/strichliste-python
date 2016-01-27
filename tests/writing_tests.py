@@ -122,7 +122,7 @@ def test_07_create_transaction_2():
 def test_08_create_transaction_fail_lower_account_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': -100}
+    params = {'value': -10000}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -130,14 +130,14 @@ def test_08_create_transaction_fail_lower_account_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == ("transaction value of -100 leads to an overall account balance "
-                                 "of -77 which goes below the lower account limit of -23")
+    assert result['message'] == ("transaction value of -10000 leads to an overall account balance "
+                                 "of -7699 which goes below the lower account limit of -2300")
 
 
 def test_09_create_transaction_fail_upper_account_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': 100}
+    params = {'value': 10000}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -145,14 +145,14 @@ def test_09_create_transaction_fail_upper_account_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == ("transaction value of 100 leads to an overall account balance of 123 "
-                                 "which goes beyond the upper account limit of 42")
+    assert result['message'] == ("transaction value of 10000 leads to an overall account balance of 12301 "
+                                 "which goes beyond the upper account limit of 4200")
 
 
 def test_10_create_transaction_fail_lower_transaction_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': -99999}
+    params = {'value': -9999999}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -160,13 +160,13 @@ def test_10_create_transaction_fail_lower_transaction_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "transaction value of -99999 falls below the transaction minimum of -9999"
+    assert result['message'] == "transaction value of -9999999 falls below the transaction minimum of -999900"
 
 
 def test_11_create_transaction_fail_upper_transaction_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': 99999}
+    params = {'value': 9999999}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -174,7 +174,7 @@ def test_11_create_transaction_fail_upper_transaction_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "transaction value of 99999 exceeds the transaction maximum of 9999"
+    assert result['message'] == "transaction value of 9999999 exceeds the transaction maximum of 999900"
 
 
 def test_12_invalid_json():
