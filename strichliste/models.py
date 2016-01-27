@@ -31,6 +31,16 @@ class User(db.Model):
         return round(decimal.Decimal(ret if ret is not None else 0) / 100, 2)
 
     @property
+    def balance_cent(self) -> int:
+        ret = db.session.query(sa.func.sum(Transaction.value)).filter(
+                Transaction.userId == self.id).first()
+        if ret[0] is None:
+            ret = 0
+        else:
+            ret = ret[0]
+        return ret
+
+    @property
     def lastTransaction(self):
         ret = Transaction.query.filter(Transaction.userId == self.id).order_by(
             Transaction.createDate.desc()).first()

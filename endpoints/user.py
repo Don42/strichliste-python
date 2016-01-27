@@ -107,6 +107,26 @@ class UserTransactionList(Resource):
         if user is None:
             return make_error_response("user {} not found".format(user_id), 404)
 
+        max_account = self.app.config['app_config'].upper_account_boundary
+        min_account = self.app.config['app_config'].lower_account_boundary
+        new_balance = user.balance_cent + value
+        if new_balance > max_account:
+            return make_error_response(
+                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
+                     "which goes beyond the upper account limit of {limit}".format(trans_val=value,
+                                                                                   new=new_balance,
+                                                                                   limit=max_account)),
+                    403
+            )
+        elif new_balance < min_account:
+            return make_error_response(
+                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
+                     "which goes below the lower account limit of {limit}").format(trans_val=value,
+                                                                                   new=new_balance,
+                                                                                   limit=min_account),
+                    403
+            )
+
         transaction = models.Transaction(userId=user_id, value=value)
         try:
             db.session.add(transaction)
