@@ -187,7 +187,7 @@ def test_12_invalid_json():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "Unexpected token }"
+    assert result['message'] == "Error parsing json"
 
 
 def test_13_create_user_2():

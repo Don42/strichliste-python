@@ -7,6 +7,7 @@ import sqlalchemy.exc
 
 from database import db
 import strichliste.models as models
+from werkzeug.exceptions import BadRequest
 
 
 class UserList(Resource):
@@ -75,7 +76,11 @@ class UserTransactionList(Resource):
                              200)
 
     def post(self, user_id):
-        args = transaction_parser.parse_args()
+        try:
+            args = transaction_parser.parse_args()
+        except BadRequest:
+            # TODO Logging
+            return make_error_response("Error parsing json", 400)
         if 'value' not in args:
             return make_error_response("value missing", 400)
         raw_value = args['value']
@@ -88,7 +93,6 @@ class UserTransactionList(Resource):
                 value = int(value.quantize(models.TWO_PLACES).shift(2).to_integral_exact())
             except decimal.InvalidOperation as e:
                 # TODO Logging
-                print(e)
                 return make_error_response("not a number: {}".format(raw_value), 400)
         max_transaction = self.app.config['app_config'].upper_transaction_boundary
         min_transaction = self.app.config['app_config'].lower_transaction_boundary
