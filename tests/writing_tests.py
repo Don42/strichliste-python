@@ -253,7 +253,7 @@ def test_16_load_user_by_id():
     assert {'name', 'id', 'balance', 'lastTransaction', 'transactions'}.issubset(user)
     assert user['name'] == 'gert'
     assert user['id'] == 1
-    assert user['balance'] == 23
+    assert user['balance'] == "23.01"
     assert user['lastTransaction'] is not None
     transactions = user['transactions']
     for entry in transactions:
@@ -291,9 +291,9 @@ def test_18_load_transactions():
     assert transactions['limit'] == 1
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    for entry in entries:
-        assert entry['value'] == "11.00"
-        assert entry['userId'] == 1
+    assert len(entries) == 1
+    assert entries[0]['value'] == "12.01"
+    assert entries[0]['userId'] == 1
 
 
 def test_19_load_user_transactions_1():
@@ -309,9 +309,10 @@ def test_19_load_user_transactions_1():
     assert transactions['limit'] is None
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    for entry in entries:
-        assert entry['value'] in ["11.00", "12.01"]
-        assert entry['userId'] == 1
+    assert entries[0]['value'] == "11.00"
+    assert entries[0]['userId'] == 1
+    assert entries[1]['value'] == "12.01"
+    assert entries[1]['userId'] == 1
 
 
 def test_20_load_user_transactions_2():
@@ -338,13 +339,13 @@ def test_21_load_user_transactions_offset_1():
     transactions = json.loads(r.text)
     assert {'overallCount', 'limit', 'offset', 'entries'}.issubset(transactions)
     assert transactions['overallCount'] == 2
-    assert transactions['offset'] == 0
+    assert transactions['offset'] is None
     assert transactions['limit'] == 1
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    for entry in entries:
-        assert entry['value'] == "12.01"
-        assert entry['userId'] == 1
+    assert len(entries) == 1
+    assert entries[0]['value'] == "11.00"
+    assert entries[0]['userId'] == 1
 
 
 def test_22_load_user_transactions_offset_2():
@@ -360,10 +361,10 @@ def test_22_load_user_transactions_offset_2():
     assert transactions['limit'] == 1
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    for entry in entries:
-        assert {'id', 'userId', 'createDate', 'value'}.issubset(entry)
-        assert entry['value'] == "11.00"
-        assert entry['userId'] == 1
+    assert len(entries) == 1
+    assert {'id', 'userId', 'createDate', 'value'}.issubset(entries[0])
+    assert entries[0]['value'] == "12.01"
+    assert entries[0]['userId'] == 1
 
 
 def test_23_load_user_transactions_single():

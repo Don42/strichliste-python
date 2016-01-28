@@ -23,7 +23,7 @@ class Transaction(Resource):
         limit = args.get('limit', None)
         offset = args.get('offset', None)
         count = models.Transaction.query.count()
-        result = models.Transaction.query.all()
+        result = models.Transaction.query.offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]
         return make_response({'overallCount': count, 'limit': limit,
                               'offset': offset, 'entries': entries}, 200)
