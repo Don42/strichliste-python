@@ -1,5 +1,6 @@
 import decimal
 
+from flask import current_app
 from flask_restful import Resource
 from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
 
@@ -94,8 +95,10 @@ class UserTransactionList(Resource):
             except decimal.InvalidOperation as e:
                 # TODO Logging
                 return make_error_response("not a number: {}".format(raw_value), 400)
-        max_transaction = self.app.config['app_config'].upper_transaction_boundary
-        min_transaction = self.app.config['app_config'].lower_transaction_boundary
+
+        config = current_app.config['app_config']
+        max_transaction = config.upper_transaction_boundary
+        min_transaction = config.lower_transaction_boundary
         if value == 0:
             return make_error_response("value must not be zero", 400)
         elif value > max_transaction:
@@ -111,8 +114,8 @@ class UserTransactionList(Resource):
         if user is None:
             return make_error_response("user {} not found".format(user_id), 404)
 
-        max_account = self.app.config['app_config'].upper_account_boundary
-        min_account = self.app.config['app_config'].lower_account_boundary
+        max_account = config.upper_account_boundary
+        min_account = config.lower_account_boundary
         new_balance = user.balance_cent + value
         if new_balance > max_account:
             return make_error_response(

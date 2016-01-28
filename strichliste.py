@@ -11,13 +11,6 @@ def main():
     app = create_app('./strichliste.ini')
     api = Api(app)
 
-    Setting.app = app
-    UserList.app = app
-    UserTransactionList.app = app
-    User.app = app
-    UserTransaction.app = app
-    Transaction.app = app
-
     api.add_resource(Setting, '/settings')
     api.add_resource(UserList, '/user')
     api.add_resource(User, '/user/<user_id>')
