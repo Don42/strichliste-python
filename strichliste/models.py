@@ -1,14 +1,9 @@
-import decimal
 import datetime
 
 from database import db
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-
-TWO_PLACES = decimal.Decimal("0.01")
-CONTEXT = decimal.getcontext()
-CONTEXT.rounding = decimal.ROUND_HALF_UP
 
 
 class User(db.Model):
@@ -21,17 +16,7 @@ class User(db.Model):
     transactions = relationship('Transaction', back_populates='user')
 
     @property
-    def balance(self) -> decimal.Decimal:
-        ret = db.session.query(sa.func.sum(Transaction.value)).filter(
-                Transaction.userId == self.id).first()
-        if ret is None:
-            ret = 0
-        else:
-            ret = ret[0]
-        return round(decimal.Decimal(ret if ret is not None else 0) / 100, 2)
-
-    @property
-    def balance_cent(self) -> int:
+    def balance(self) -> int:
         ret = db.session.query(sa.func.sum(Transaction.value)).filter(
                 Transaction.userId == self.id).first()
         if ret[0] is None:
@@ -50,7 +35,7 @@ class User(db.Model):
         return "User: id: {id}, name: {name}".format(id=self.id, name=self.name)
 
     def dict(self):
-        return {'id': self.id, 'name': self.name, 'balance': str(self.balance),
+        return {'id': self.id, 'name': self.name, 'balance': self.balance,
                 'lastTransaction': self.lastTransaction}
 
 
@@ -62,21 +47,9 @@ class Transaction(db.Model):
     createDate = db.Column(db.DATETIME, default=datetime.datetime.utcnow)
     value = db.Column(db.INTEGER, nullable=False)
 
-    @property
-    def value_dec(self) -> decimal.Decimal:
-        return round(decimal.Decimal(self.value) / 100, 2)
-
-    @value_dec.setter
-    def value_dec(self, value: decimal.Decimal):
-        self.value = int(value.quantize(TWO_PLACES).shift(2).to_integral_exact())
-
     def dict(self):
         return {'id': self.id, 'userId': self.userId,
-                'value': "{}".format(self.value_dec.quantize(TWO_PLACES)),
-                'createDate': self.createDate.isoformat()}
-
-    def get_decimal(self) -> decimal.Decimal:
-        return decimal.Decimal(self.value) / 100
+                'value': self.value, 'createDate': self.createDate.isoformat()}
 
 
 class Meta(db.Model):

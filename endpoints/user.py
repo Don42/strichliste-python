@@ -1,5 +1,3 @@
-import decimal
-
 from flask import current_app
 from flask_restful import Resource
 from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
@@ -82,19 +80,13 @@ class UserTransactionList(Resource):
         except BadRequest:
             # TODO Logging
             return make_error_response("Error parsing json", 400)
-        if 'value' not in args:
+        if 'value' not in args or args['value'] is None:
             return make_error_response("value missing", 400)
-        raw_value = args['value']
-
         try:
-            value = int(raw_value)
+            value = int(args['value'])
         except ValueError:
-            try:
-                value = decimal.Decimal(raw_value)
-                value = int(value.quantize(models.TWO_PLACES).shift(2).to_integral_exact())
-            except decimal.InvalidOperation as e:
-                # TODO Logging
-                return make_error_response("not a number: {}".format(raw_value), 400)
+            # TODO Logging
+            return make_error_response("not a number: {}".format(args['value']), 400)
 
         config = current_app.config['app_config']
         max_transaction = config.upper_transaction_boundary
@@ -116,7 +108,7 @@ class UserTransactionList(Resource):
 
         max_account = config.upper_account_boundary
         min_account = config.lower_account_boundary
-        new_balance = user.balance_cent + value
+        new_balance = user.balance + value
         if new_balance > max_account:
             return make_error_response(
                     ("transaction value of {trans_val} leads to an overall account balance of {new} "

@@ -95,7 +95,7 @@ def test_06_create_transaction_1():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(result)
     assert result['id'] == 1
     assert result['userId'] == 1
-    assert result['value'] == "11.00"
+    assert result['value'] == 1100
     create_date = datetime.datetime.strptime(result['createDate'], '%Y-%m-%dT%H:%M:%S.%f')
     assert (now - create_date).total_seconds() < 20
 
@@ -103,7 +103,7 @@ def test_06_create_transaction_1():
 def test_07_create_transaction_2():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Create another transaction
-    params = {'value': "12.01"}
+    params = {'value': 1201}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -114,7 +114,7 @@ def test_07_create_transaction_2():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(result)
     assert result['id'] == 2
     assert result['userId'] == 1
-    assert result['value'] == "12.01"
+    assert result['value'] == 1201
     create_date = datetime.datetime.strptime(result['createDate'], '%Y-%m-%dT%H:%M:%S.%f')
     assert (now - create_date).total_seconds() < 20
 
@@ -253,12 +253,12 @@ def test_16_load_user_by_id():
     assert {'name', 'id', 'balance', 'lastTransaction', 'transactions'}.issubset(user)
     assert user['name'] == 'gert'
     assert user['id'] == 1
-    assert user['balance'] == "23.01"
+    assert user['balance'] == 2301
     assert user['lastTransaction'] is not None
     transactions = user['transactions']
     for entry in transactions:
         assert {'id', 'userId', 'createDate', 'value'}.issubset(entry)
-        assert entry['value'] in ["11.00", "12.01"]
+        assert entry['value'] in [1100, 1201]
         assert entry['userId'] == 1
 
 
@@ -275,7 +275,7 @@ def test_17_load_transactions():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     for entry in entries:
-        assert entry['value'] in ["11.00", "12.01"]
+        assert entry['value'] in [1100, 1201]
         assert entry['userId'] == 1
 
 
@@ -292,7 +292,7 @@ def test_18_load_transactions():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     assert len(entries) == 1
-    assert entries[0]['value'] == "12.01"
+    assert entries[0]['value'] == 1201
     assert entries[0]['userId'] == 1
 
 
@@ -309,9 +309,9 @@ def test_19_load_user_transactions_1():
     assert transactions['limit'] is None
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    assert entries[0]['value'] == "11.00"
+    assert entries[0]['value'] == 1100
     assert entries[0]['userId'] == 1
-    assert entries[1]['value'] == "12.01"
+    assert entries[1]['value'] == 1201
     assert entries[1]['userId'] == 1
 
 
@@ -344,7 +344,7 @@ def test_21_load_user_transactions_offset_1():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     assert len(entries) == 1
-    assert entries[0]['value'] == "11.00"
+    assert entries[0]['value'] == 1100
     assert entries[0]['userId'] == 1
 
 
@@ -363,7 +363,7 @@ def test_22_load_user_transactions_offset_2():
     entries = transactions['entries']
     assert len(entries) == 1
     assert {'id', 'userId', 'createDate', 'value'}.issubset(entries[0])
-    assert entries[0]['value'] == "12.01"
+    assert entries[0]['value'] == 1201
     assert entries[0]['userId'] == 1
 
 
@@ -377,7 +377,7 @@ def test_23_load_user_transactions_single():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(transaction)
     assert transaction['id'] == 1
     assert transaction['userId'] == 1
-    assert transaction['value'] == "11.00"
+    assert transaction['value'] == 1100
 
 
 def test_24_metrics():
