@@ -27,14 +27,15 @@ class UserList(Resource):
         name = args.get('name')
         mail_address = args.get('mailAddress')
         if name is None or mail_address is None:
+            current_app.logger.warning("Could not create user: name missing")
             return make_error_response("name missing", 400)
 
         user = models.User(name=name, mailAddress=mail_address)
         try:
             db.session.add(user)
             db.session.commit()
-        except sqlalchemy.exc.IntegrityError as e:
-            # TODO Logging
+        except sqlalchemy.exc.IntegrityError:
+            current_app.logger.warning("Could not create user: Duplicate user {}".format(user.name))
             return make_error_response("user {} already exists".format(user.name), 409)
 
         return make_response({'id': user.id, 'name': user.name,
