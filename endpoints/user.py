@@ -35,7 +35,7 @@ class UserList(Resource):
             db.session.add(user)
             db.session.commit()
         except sqlalchemy.exc.IntegrityError:
-            current_app.logger.warning("Could not create user: Duplicate user {}".format(user.name))
+            current_app.logger.warning("Could not create duplicate user - user='{}'".format(user.name))
             return make_error_response("user {} already exists".format(user.name), 409)
 
         return make_response({'id': user.id, 'name': user.name,
@@ -50,12 +50,14 @@ class User(Resource):
         try:
             user = models.User.query.get(user_id)
             if user is None:
+                current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
                 return make_error_response("user {} not found".format(user_id), 404)
             out_dict = user.dict()
             out_dict['transactions'] = [x.dict() for x in user.transactions]
             return make_response(out_dict, 200)
         except sqlalchemy.exc.SQLAlchemyError as e:
-            # TODO Logging
+            current_app.logger.error("Unexpected SQLAlchemyError: {error} - user_id='{user_id}".format(error=e,
+                                                                                                       user_id=user_id))
             return make_error_response("Internal Error", 500)
 
 
