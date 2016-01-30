@@ -34,6 +34,8 @@ class UserList(Resource):
         try:
             db.session.add(user)
             db.session.commit()
+            current_app.logger.info("User created - user_id='{user_id}', name='{name}'".format(user_id=user.id,
+                                                                                               name=user.name))
         except sqlalchemy.exc.IntegrityError:
             current_app.logger.warning("Could not create duplicate user - user='{}'".format(user.name))
             return make_error_response("user {} already exists".format(user.name), 409)
@@ -133,6 +135,9 @@ class UserTransactionList(Resource):
         try:
             db.session.add(transaction)
             db.session.commit()
+            current_app.logger.info("Transaction created - id='{id}', user_id='{user_id}'".format(
+                    id=transaction.id,
+                    user_id=transaction.userId))
         except sqlalchemy.exc.IntegrityError as e:
             # TODO Logging
             return make_error_response("user {} not found".format(user_id), 404)
