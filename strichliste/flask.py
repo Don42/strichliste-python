@@ -23,6 +23,9 @@ class Config():
 
 
 def initialize_logger(app):
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.ERROR)
+
     logging.Formatter.converter = time.gmtime
     formatter = logging.Formatter(LOGGING_FORMAT)
     handler = logging.StreamHandler()
@@ -30,6 +33,7 @@ def initialize_logger(app):
     handler.setLevel(logging.DEBUG)
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
+
     app.logger.debug("App created")
 
 
