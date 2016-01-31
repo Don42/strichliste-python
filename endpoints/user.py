@@ -52,7 +52,7 @@ class User(Resource):
         try:
             user = models.User.query.get(user_id)
             if user is None:
-                current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
+                current_app.logger.warning("Could not find user: User ID not found - user_id='{}'".format(user_id))
                 return make_error_response("user {} not found".format(user_id), 404)
             out_dict = user.dict()
             out_dict['transactions'] = [x.dict() for x in user.transactions]
