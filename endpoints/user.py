@@ -68,6 +68,7 @@ class UserTransactionList(Resource):
     def get(self, user_id):
         user = models.User.query.get(user_id)
         if user is None:
+            current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
         args = list_parser.parse_args()
         limit = args.get('limit', None)
@@ -83,38 +84,44 @@ class UserTransactionList(Resource):
         try:
             args = transaction_parser.parse_args()
         except BadRequest:
-            # TODO Logging
+            current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("Error parsing json", 400)
         if 'value' not in args or args['value'] is None:
+            current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("value missing", 400)
         try:
             value = int(args['value'])
         except ValueError:
-            # TODO Logging
+            current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("not a number: {}".format(args['value']), 400)
 
         config = current_app.config['app_config']
         max_transaction = config.upper_transaction_boundary
         min_transaction = config.lower_transaction_boundary
         if value == 0:
+            current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("value must not be zero", 400)
         elif value > max_transaction:
+            current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
             return make_error_response(
                     "transaction value of {} exceeds the transaction maximum of {}".format(value, max_transaction),
                     403)
         elif value < min_transaction:
+            current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
             return make_error_response(
                     "transaction value of {} falls below the transaction minimum of {}".format(value, min_transaction),
                     403)
 
         user = models.User.query.get(user_id)
         if user is None:
+            current_app.logger.warning("Could not create transaction: User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
 
         max_account = config.upper_account_boundary
         min_account = config.lower_account_boundary
         new_balance = user.balance + value
         if new_balance > max_account:
+            current_app.logger.warning("Could not create transaction: Account boundary exceeded")
             return make_error_response(
                     ("transaction value of {trans_val} leads to an overall account balance of {new} "
                      "which goes beyond the upper account limit of {limit}".format(trans_val=value,
@@ -123,6 +130,7 @@ class UserTransactionList(Resource):
                     403
             )
         elif new_balance < min_account:
+            current_app.logger.warning("Could not create transaction: Account boundary exceeded")
             return make_error_response(
                     ("transaction value of {trans_val} leads to an overall account balance of {new} "
                      "which goes below the lower account limit of {limit}").format(trans_val=value,
@@ -139,7 +147,11 @@ class UserTransactionList(Resource):
                     id=transaction.id,
                     user_id=transaction.userId))
         except sqlalchemy.exc.IntegrityError as e:
-            # TODO Logging
+            current_app.logger.error("Could not create transaction: {e} - user_id='{user_id}, value='{value}''".format(
+                e=e,
+                user_id=user.id,
+                value=transaction.userId
+            ))
             return make_error_response("user {} not found".format(user_id), 404)
 
         return make_response(transaction.dict(), 201)
