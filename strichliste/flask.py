@@ -6,6 +6,8 @@ from configparser import ConfigParser
 from flask import Flask
 from database import db
 
+from strichliste import error_handlers
+
 LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
@@ -46,5 +48,7 @@ def create_app(config_path):
     db.init_app(app)
 
     initialize_logger(app)
+
+    app.errorhandler(404)(error_handlers.page_not_found)
     return app
 
