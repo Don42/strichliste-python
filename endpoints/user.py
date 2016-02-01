@@ -13,8 +13,8 @@ class UserList(Resource):
 
     def get(self):
         args = list_parser.parse_args()
-        limit = args.get('limit', None)
-        offset = args.get('offset', None)
+        limit = args.get('limit')
+        offset = args.get('offset')
         count = models.User.query.count()
         result = models.User.query.offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]
@@ -71,8 +71,8 @@ class UserTransactionList(Resource):
             current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
         args = list_parser.parse_args()
-        limit = args.get('limit', None)
-        offset = args.get('offset', None)
+        limit = args.get('limit')
+        offset = args.get('offset')
         count = models.Transaction.query.filter(models.Transaction.userId == user.id).count()
         result = models.Transaction.query.filter(models.Transaction.userId == user.id).offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]

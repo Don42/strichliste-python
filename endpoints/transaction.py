@@ -24,8 +24,8 @@ class Transaction(Resource):
 
     def get(self):
         args = list_parser.parse_args()
-        limit = args.get('limit', None)
-        offset = args.get('offset', None)
+        limit = args.get('limit')
+        offset = args.get('offset')
         count = models.Transaction.query.count()
         result = models.Transaction.query.offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]
