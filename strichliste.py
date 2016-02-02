@@ -8,7 +8,7 @@ from database import db
 
 
 def main():
-    app = create_app('./strichliste.ini')
+    app = create_app('./strichliste.conf')
     api = Api(app)
 
     api.add_resource(Setting, '/settings')
