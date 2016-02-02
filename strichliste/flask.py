@@ -22,6 +22,7 @@ class Config():
         self.db_path = config.get('base', 'db_path', fallback='/tmp/strichliste.db')
         if ':///' not in self.db_path:
             self.db_path = 'sqlite:///' + self.db_path
+        self.log_path = config.get('logging', 'path', fallback='/tmp/strichliste.log')
 
 
 def initialize_logger(app):
@@ -30,11 +31,18 @@ def initialize_logger(app):
 
     logging.Formatter.converter = time.gmtime
     formatter = logging.Formatter(LOGGING_FORMAT)
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    handler.setLevel(logging.DEBUG)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(logging.DEBUG)
+
+    file_handler = logging.handlers.RotatingFileHandler(app.config['APP_LOGFILE'])
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+
     app.logger.setLevel(logging.DEBUG)
-    app.logger.addHandler(handler)
+    app.logger.addHandler(stream_handler)
+    app.logger.addHandler(file_handler)
 
     app.logger.debug("App created")
 
@@ -45,6 +53,7 @@ def create_app(config_path):
     app.config['app_config'] = config
     app.config['SQLALCHEMY_DATABASE_URI'] = config.db_path
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['APP_LOGFILE'] = config.log_path
     db.init_app(app)
 
     initialize_logger(app)
