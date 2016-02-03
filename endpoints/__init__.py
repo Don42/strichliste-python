@@ -11,7 +11,7 @@ transaction_parser = reqparse.RequestParser()
 transaction_parser.add_argument('value', location='json')
 
 list_parser = reqparse.RequestParser()
-list_parser.add_argument('offset', type=int, location='args', default=0)
+list_parser.add_argument('offset', type=int, location='args', default=None)
 list_parser.add_argument('limit', type=int, location='args', default=None)
 
 HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
