@@ -1,21 +1,8 @@
-
-import requests
 import json
 
+import requests
+
 URL = ("http://", "127.0.0.1", ":", "8080", "/")
-
-
-def test_settings():
-    r = requests.get(''.join(URL + ('settings',)))
-    assert r.ok
-    assert r.encoding == 'utf-8'
-    settings = json.loads(r.text)
-    assert 'boundaries' in settings
-    boundaries = settings['boundaries']
-    assert 'upper' in boundaries
-    assert 'lower' in boundaries
-    assert boundaries['lower'] == -23
-    assert boundaries['upper'] == 42
 
 
 def test_empty_user_list():
