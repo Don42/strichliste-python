@@ -10,6 +10,10 @@ from strichliste.config import Config
 from werkzeug.exceptions import BadRequest
 
 
+def make_float(val):
+    return float(val) / 100
+
+
 class UserList(Resource):
 
     def get(self):
@@ -91,7 +95,7 @@ class UserTransactionList(Resource):
             current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("value missing", 400)
         try:
-            value = int(args['value'])
+            value = int(float(args['value']) * 100)
         except ValueError:
             current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("not a number: {}".format(args['value']), 400)
@@ -105,12 +109,14 @@ class UserTransactionList(Resource):
         elif value > max_transaction:
             current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
             return make_error_response(
-                    "transaction value of {} exceeds the transaction maximum of {}".format(value, max_transaction),
+                    "transaction value of {:.2f} exceeds the transaction maximum of {:.2f}".format(
+                        make_float(value), make_float(max_transaction)),
                     403)
         elif value < min_transaction:
             current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
             return make_error_response(
-                    "transaction value of {} falls below the transaction minimum of {}".format(value, min_transaction),
+                    "transaction value of {:.2f} falls below the transaction minimum of {:.2f}".format(
+                        make_float(value), make_float(min_transaction)),
                     403)
 
         user = models.User.query.get(user_id)
@@ -124,19 +130,19 @@ class UserTransactionList(Resource):
         if new_balance > max_account:
             current_app.logger.warning("Could not create transaction: Account boundary exceeded")
             return make_error_response(
-                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
-                     "which goes beyond the upper account limit of {limit}".format(trans_val=value,
-                                                                                   new=new_balance,
-                                                                                   limit=max_account)),
+                    ("transaction value of {trans_val:.2f} leads to an overall account balance of {new:.2f} "
+                     "which goes beyond the upper account limit of {limit:.2f}").format(trans_val=make_float(value),
+                                                                                        new=make_float(new_balance),
+                                                                                        limit=make_float(max_account)),
                     403
             )
         elif new_balance < min_account:
             current_app.logger.warning("Could not create transaction: Account boundary exceeded")
             return make_error_response(
-                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
-                     "which goes below the lower account limit of {limit}").format(trans_val=value,
-                                                                                   new=new_balance,
-                                                                                   limit=min_account),
+                    ("transaction value of {trans_val:.2f} leads to an overall account balance of {new:.2f} "
+                     "which goes below the lower account limit of {limit:.2f}").format(trans_val=make_float(value),
+                                                                                       new=make_float(new_balance),
+                                                                                       limit=make_float(min_account)),
                     403
             )
 
@@ -151,9 +157,11 @@ class UserTransactionList(Resource):
             current_app.logger.error("Could not create transaction: {e} - user_id='{user_id}, value='{value}''".format(
                 e=e,
                 user_id=user.id,
-                value=transaction.userId
+                value=transaction.value
             ))
             return make_error_response("user {} not found".format(user_id), 404)
 
-        return make_response(transaction.dict(), 201)
+        ret = transaction.dict()
+        ret['value'] = make_float(ret['value'])
+        return make_response(ret, 201)
 

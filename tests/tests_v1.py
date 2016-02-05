@@ -3,7 +3,7 @@ import requests
 import json
 import datetime
 
-URL = ("http://", "127.0.0.1", ":", "8080", "/", "v2", "/")
+URL = ("http://", "127.0.0.1", ":", "8080", "/")
 
 # These tests need to be run in order
 
@@ -70,7 +70,7 @@ def test_04_create_transaction_fail_nan():
 def test_05_create_transaction_fail_zero():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction when value is zero
-    params = {'value': 0}
+    params = {'value': 0.0}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -84,7 +84,7 @@ def test_05_create_transaction_fail_zero():
 def test_06_create_transaction_1():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Create transaction
-    params = {'value': 1100}
+    params = {'value': 11.00}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -95,7 +95,7 @@ def test_06_create_transaction_1():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(result)
     assert result['id'] == 1
     assert result['userId'] == 1
-    assert result['value'] == 1100
+    assert result['value'] == 11.0
     create_date = datetime.datetime.strptime(result['createDate'], '%Y-%m-%dT%H:%M:%S.%f')
     assert (now - create_date).total_seconds() < 20
 
@@ -103,7 +103,7 @@ def test_06_create_transaction_1():
 def test_07_create_transaction_2():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Create another transaction
-    params = {'value': 1201}
+    params = {'value': 12.01}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -114,7 +114,7 @@ def test_07_create_transaction_2():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(result)
     assert result['id'] == 2
     assert result['userId'] == 1
-    assert result['value'] == 1201
+    assert result['value'] == 12.01
     create_date = datetime.datetime.strptime(result['createDate'], '%Y-%m-%dT%H:%M:%S.%f')
     assert (now - create_date).total_seconds() < 20
 
@@ -122,7 +122,7 @@ def test_07_create_transaction_2():
 def test_08_create_transaction_fail_lower_account_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': -10000}
+    params = {'value': -100.00}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -130,14 +130,14 @@ def test_08_create_transaction_fail_lower_account_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == ("transaction value of -10000 leads to an overall account balance "
-                                 "of -7699 which goes below the lower account limit of -2300")
+    assert result['message'] == ("transaction value of -100.00 leads to an overall account balance "
+                                 "of -76.99 which goes below the lower account limit of -23.00")
 
 
 def test_09_create_transaction_fail_upper_account_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': 10000}
+    params = {'value': 100.00}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -145,14 +145,14 @@ def test_09_create_transaction_fail_upper_account_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == ("transaction value of 10000 leads to an overall account balance of 12301 "
-                                 "which goes beyond the upper account limit of 4200")
+    assert result['message'] == ("transaction value of 100.00 leads to an overall account balance of 123.01 "
+                                 "which goes beyond the upper account limit of 42.00")
 
 
 def test_10_create_transaction_fail_lower_transaction_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': -9999999}
+    params = {'value': -99999.99}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -160,13 +160,13 @@ def test_10_create_transaction_fail_lower_transaction_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "transaction value of -9999999 falls below the transaction minimum of -999900"
+    assert result['message'] == "transaction value of -99999.99 falls below the transaction minimum of -9999.00"
 
 
 def test_11_create_transaction_fail_upper_transaction_boundary():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     # Fail to create transaction with 403 (lower account boundary)
-    params = {'value': 9999999}
+    params = {'value': 99999.99}
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data=json.dumps(params))
@@ -174,12 +174,12 @@ def test_11_create_transaction_fail_upper_transaction_boundary():
     assert r.encoding == 'utf-8'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "transaction value of 9999999 exceeds the transaction maximum of 999900"
+    assert result['message'] == "transaction value of 99999.99 exceeds the transaction maximum of 9999.00"
 
 
 def test_12_invalid_json():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
-    # Fail to create transaction with 403 (lower account boundary)
+    # Fail to create transaction with 400 Bad Request
     r = requests.post(''.join((URL + ('user', '/', '1', '/', 'transaction',))),
                       headers=headers,
                       data='{"name":}')
@@ -205,7 +205,7 @@ def test_13_create_user_2():
             'lastTransaction'}.issubset(result)
     assert result['name'] == 'bar'
     assert result['id'] == 2
-    assert result['balance'] == 0
+    assert result['balance'] == 0.0
     assert result['lastTransaction'] is None
 
 
@@ -258,7 +258,7 @@ def test_16_load_user_by_id():
     transactions = user['transactions']
     for entry in transactions:
         assert {'id', 'userId', 'createDate', 'value'}.issubset(entry)
-        assert entry['value'] in [1100, 1201]
+        assert entry['value'] in [11.00, 12.01]
         assert entry['userId'] == 1
 
 
@@ -275,7 +275,7 @@ def test_17_load_transactions():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     for entry in entries:
-        assert entry['value'] in [1100, 1201]
+        assert entry['value'] in [11.00, 12.01]
         assert entry['userId'] == 1
 
 
@@ -292,7 +292,7 @@ def test_18_load_transactions():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     assert len(entries) == 1
-    assert entries[0]['value'] == 1201
+    assert entries[0]['value'] == 12.01
     assert entries[0]['userId'] == 1
 
 
@@ -309,9 +309,9 @@ def test_19_load_user_transactions_1():
     assert transactions['limit'] is None
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
-    assert entries[0]['value'] == 1100
+    assert entries[0]['value'] == 11.00
     assert entries[0]['userId'] == 1
-    assert entries[1]['value'] == 1201
+    assert entries[1]['value'] == 12.01
     assert entries[1]['userId'] == 1
 
 
@@ -344,7 +344,7 @@ def test_21_load_user_transactions_offset_1():
     assert isinstance(transactions['entries'], list)
     entries = transactions['entries']
     assert len(entries) == 1
-    assert entries[0]['value'] == 1100
+    assert entries[0]['value'] == 11.00
     assert entries[0]['userId'] == 1
 
 
@@ -363,7 +363,7 @@ def test_22_load_user_transactions_offset_2():
     entries = transactions['entries']
     assert len(entries) == 1
     assert {'id', 'userId', 'createDate', 'value'}.issubset(entries[0])
-    assert entries[0]['value'] == 1201
+    assert entries[0]['value'] == 12.01
     assert entries[0]['userId'] == 1
 
 
@@ -377,10 +377,10 @@ def test_23_load_user_transactions_single():
     assert {'id', 'userId', 'createDate', 'value'}.issubset(transaction)
     assert transaction['id'] == 1
     assert transaction['userId'] == 1
-    assert transaction['value'] == 1100
+    assert transaction['value'] == 11.00
 
 
-def test_24_metrics():
+def deactivate_test_24_metrics():  # This test is currently deactivated
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     r = requests.get(''.join(URL + ('metrics',)),
                      headers=headers)
