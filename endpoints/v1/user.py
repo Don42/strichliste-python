@@ -1,17 +1,13 @@
+import sqlalchemy.exc
 from flask import current_app
 from flask_restful import Resource
-from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
-
-import sqlalchemy.exc
-
-from database import db
-import strichliste.models as models
-from strichliste.config import Config
 from werkzeug.exceptions import BadRequest
 
-
-def make_float(val):
-    return float(val) / 100
+import strichliste.models as models
+from database import db
+from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
+from endpoints.v1.utils import make_float, make_transaction_float, make_user_float
+from strichliste.config import Config
 
 
 class UserList(Resource):
@@ -22,7 +18,7 @@ class UserList(Resource):
         offset = args.get('offset')
         count = models.User.query.count()
         result = models.User.query.offset(offset).limit(limit).all()
-        entries = [x.dict() for x in result]
+        entries = [make_user_float(x) for x in result]
 
         return make_response({'overallCount': count, 'limit': limit,
                               'offset': offset, 'entries': entries}, 200)
@@ -59,9 +55,7 @@ class User(Resource):
             if user is None:
                 current_app.logger.warning("Could not find user: User ID not found - user_id='{}'".format(user_id))
                 return make_error_response("user {} not found".format(user_id), 404)
-            out_dict = user.dict()
-            out_dict['transactions'] = [x.dict() for x in user.transactions]
-            return make_response(out_dict, 200)
+            return make_response(make_user_float(user), 200)
         except sqlalchemy.exc.SQLAlchemyError as e:
             current_app.logger.error("Unexpected SQLAlchemyError: {error} - user_id='{user_id}".format(error=e,
                                                                                                        user_id=user_id))
@@ -80,7 +74,7 @@ class UserTransactionList(Resource):
         offset = args.get('offset')
         count = models.Transaction.query.filter(models.Transaction.userId == user.id).count()
         result = models.Transaction.query.filter(models.Transaction.userId == user.id).offset(offset).limit(limit).all()
-        entries = [x.dict() for x in result]
+        entries = [make_transaction_float(x) for x in result]
         return make_response({'overallCount': count, 'limit': limit,
                               'offset': offset, 'entries': entries},
                              200)
@@ -161,7 +155,5 @@ class UserTransactionList(Resource):
             ))
             return make_error_response("user {} not found".format(user_id), 404)
 
-        ret = transaction.dict()
-        ret['value'] = make_float(ret['value'])
-        return make_response(ret, 201)
+        return make_response(make_transaction_float(transaction), 201)
 

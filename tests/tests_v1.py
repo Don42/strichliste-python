@@ -253,7 +253,7 @@ def test_16_load_user_by_id():
     assert {'name', 'id', 'balance', 'lastTransaction', 'transactions'}.issubset(user)
     assert user['name'] == 'gert'
     assert user['id'] == 1
-    assert user['balance'] == 2301
+    assert user['balance'] == 23.01
     assert user['lastTransaction'] is not None
     transactions = user['transactions']
     for entry in transactions:
