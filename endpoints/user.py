@@ -6,6 +6,7 @@ import sqlalchemy.exc
 
 from database import db
 import strichliste.models as models
+from strichliste.config import Config
 from werkzeug.exceptions import BadRequest
 
 
@@ -95,7 +96,7 @@ class UserTransactionList(Resource):
             current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("not a number: {}".format(args['value']), 400)
 
-        config = current_app.config['app_config']
+        config = Config()
         max_transaction = config.upper_transaction_boundary
         min_transaction = config.lower_transaction_boundary
         if value == 0:
