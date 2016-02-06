@@ -11,6 +11,7 @@ def main():
     api = Api(app)
 
     api.add_resource(v1.Setting, '/settings')
+    api.add_resource(v1.MetricsV1, '/metrics')
     api.add_resource(v1.UserList, '/user')
     api.add_resource(v1.User, '/user/<int:user_id>')
     api.add_resource(v1.UserTransactionList, '/user/<int:user_id>/transaction')
@@ -18,6 +19,7 @@ def main():
     api.add_resource(v1.Transaction, '/transaction')
 
     api.add_resource(v2.SettingV2, '/v2/settings')
+    api.add_resource(v2.MetricsV2, '/v2/metrics')
     api.add_resource(v2.UserListV2, '/v2/user')
     api.add_resource(v2.UserV2, '/v2/user/<int:user_id>')
     api.add_resource(v2.UserTransactionListV2, '/v2/user/<int:user_id>/transaction')

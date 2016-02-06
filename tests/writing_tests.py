@@ -380,7 +380,26 @@ def test_23_load_user_transactions_single():
     assert transaction['value'] == 1100
 
 
-def deactivate_test_24_metrics():  # This test is currently deactivated
+def test_24_create_transaction_3():
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    # Create transaction
+    params = {'value': -1000}
+    r = requests.post(''.join((URL + ('user', '/', '2', '/', 'transaction',))),
+                      headers=headers,
+                      data=json.dumps(params))
+    now = datetime.datetime.utcnow()
+    assert r.status_code == 201
+    assert r.encoding == 'utf-8'
+    result = json.loads(r.text)
+    assert {'id', 'userId', 'createDate', 'value'}.issubset(result)
+    assert result['id'] == 3
+    assert result['userId'] == 2
+    assert result['value'] == -1000
+    create_date = datetime.datetime.strptime(result['createDate'], '%Y-%m-%dT%H:%M:%S.%f')
+    assert (now - create_date).total_seconds() < 20
+
+
+def test_25_metrics():
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     r = requests.get(''.join(URL + ('metrics',)),
                      headers=headers)
@@ -388,14 +407,15 @@ def deactivate_test_24_metrics():  # This test is currently deactivated
     assert r.encoding == 'utf-8'
     metrics = json.loads(r.text)
     assert {'overallBalance', 'countTransactions', 'avgBalance', 'countUsers', 'days'}.issubset(metrics)
-    assert metrics['overallBalance'] == 23
-    assert metrics['avgBalance'] == 23
+    assert metrics['overallBalance'] == 1301
+    assert metrics['avgBalance'] == 651
     assert metrics['countUsers'] == 2
-    assert metrics['countTransactions'] == 2
+    assert metrics['countTransactions'] == 3
     assert isinstance(metrics['days'], list)
     assert len(metrics['days']) == 4
     current_day = metrics['days'][3]
-    assert current_day['dayBalance'] == 23
-    assert current_day['overallNumber'] == 2
-    assert current_day['distinctUsers'] == 1
+    assert current_day['date'] == datetime.datetime.utcnow().date().isoformat()
+    assert current_day['dayBalance'] == 1301
+    assert current_day['overallNumber'] == 3
+    assert current_day['distinctUsers'] == 2
 
