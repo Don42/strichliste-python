@@ -1,13 +1,13 @@
+import sqlalchemy.exc
 from flask import current_app
 from flask_restful import Resource
-from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
-
-import sqlalchemy.exc
-
-from database import db
-import strichliste.models as models
-from strichliste.config import Config
 from werkzeug.exceptions import BadRequest
+
+import strichliste.middleware as middleware
+import strichliste.models as models
+from database import db
+from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
+from strichliste.config import Config
 
 
 class UserListV2(Resource):
@@ -16,12 +16,8 @@ class UserListV2(Resource):
         args = list_parser.parse_args()
         limit = args.get('limit')
         offset = args.get('offset')
-        count = models.User.query.count()
-        result = models.User.query.offset(offset).limit(limit).all()
-        entries = [x.dict() for x in result]
-
-        return make_response({'overallCount': count, 'limit': limit,
-                              'offset': offset, 'entries': entries}, 200)
+        users = middleware.get_users(limit, offset)
+        return make_response(users, 200)
 
     def post(self):
         args = user_parser.parse_args()
@@ -67,19 +63,14 @@ class UserV2(Resource):
 class UserTransactionListV2(Resource):
 
     def get(self, user_id):
-        user = models.User.query.get(user_id)
-        if user is None:
-            current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
-            return make_error_response("user {} not found".format(user_id), 404)
         args = list_parser.parse_args()
         limit = args.get('limit')
         offset = args.get('offset')
-        count = models.Transaction.query.filter(models.Transaction.userId == user.id).count()
-        result = models.Transaction.query.filter(models.Transaction.userId == user.id).offset(offset).limit(limit).all()
-        entries = [x.dict() for x in result]
-        return make_response({'overallCount': count, 'limit': limit,
-                              'offset': offset, 'entries': entries},
-                             200)
+        try:
+            transactions = middleware.get_users_transactions(user_id, limit=limit, offset=offset)
+        except KeyError:
+            return make_error_response("user {} not found".format(user_id), 404)
+        return make_response(transactions, 200)
 
     def post(self, user_id):
         try:
