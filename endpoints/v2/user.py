@@ -47,17 +47,10 @@ class UserV2(Resource):
 
     def get(self, user_id):
         try:
-            user = models.User.query.get(user_id)
-            if user is None:
-                current_app.logger.warning("Could not find user: User ID not found - user_id='{}'".format(user_id))
-                return make_error_response("user {} not found".format(user_id), 404)
-            out_dict = user.dict()
-            out_dict['transactions'] = [x.dict() for x in user.transactions]
-            return make_response(out_dict, 200)
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            current_app.logger.error("Unexpected SQLAlchemyError: {error} - user_id='{user_id}".format(error=e,
-                                                                                                       user_id=user_id))
-            return make_error_response("Internal Error", 500)
+            user = middleware.get_user(user_id)
+            return make_response(user, 200)
+        except KeyError:
+            return make_error_response("user {} not found".format(user_id), 404)
 
 
 class UserTransactionListV2(Resource):
