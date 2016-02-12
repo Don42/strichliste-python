@@ -14,7 +14,6 @@ class DuplicateUser(Exception):
 def get_users_transactions(user_id, limit=None, offset=None):
     user = models.User.query.get(user_id)
     if user is None:
-        current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
         raise KeyError
     count = models.Transaction.query.filter(models.Transaction.userId == user.id).count()
     result = models.Transaction.query.filter(models.Transaction.userId == user.id).offset(offset).limit(limit).all()

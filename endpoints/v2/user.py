@@ -57,6 +57,7 @@ class UserTransactionListV2(Resource):
         try:
             transactions = middleware.get_users_transactions(user_id, limit=limit, offset=offset)
         except KeyError:
+            current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
         return make_response(transactions, 200)
 
