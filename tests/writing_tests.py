@@ -3,7 +3,7 @@ import requests
 import json
 import datetime
 
-URL = ("http://", "127.0.0.1", ":", "8080", "/", "v2", "/")
+URL = ("http://", "127.0.0.1", ":", "8080", "/")
 
 # These tests need to be run in order
 

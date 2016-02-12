@@ -1,7 +1,6 @@
 from flask_restful import Api
 
-import endpoints.v1 as v1
-import endpoints.v2 as v2
+import strichliste.views
 from database import db
 from strichliste.flask import create_app
 
@@ -10,21 +9,13 @@ def main():
     app = create_app('./strichliste.conf')
     api = Api(app)
 
-    api.add_resource(v1.Setting, '/settings')
-    api.add_resource(v1.MetricsV1, '/metrics')
-    api.add_resource(v1.UserList, '/user')
-    api.add_resource(v1.User, '/user/<int:user_id>')
-    api.add_resource(v1.UserTransactionList, '/user/<int:user_id>/transaction')
-    api.add_resource(v1.UserTransaction, '/user/<int:user_id>/transaction/<int:transaction_id>')
-    api.add_resource(v1.Transaction, '/transaction')
-
-    api.add_resource(v2.SettingV2, '/v2/settings')
-    api.add_resource(v2.MetricsV2, '/v2/metrics')
-    api.add_resource(v2.UserListV2, '/v2/user')
-    api.add_resource(v2.UserV2, '/v2/user/<int:user_id>')
-    api.add_resource(v2.UserTransactionListV2, '/v2/user/<int:user_id>/transaction')
-    api.add_resource(v2.UserTransactionV2, '/v2/user/<int:user_id>/transaction/<int:transaction_id>')
-    api.add_resource(v2.TransactionV2, '/v2/transaction')
+    api.add_resource(strichliste.views.Settings, '/settings')
+    api.add_resource(strichliste.views.Metrics, '/metrics')
+    api.add_resource(strichliste.views.UserList, '/user')
+    api.add_resource(strichliste.views.User, '/user/<int:user_id>')
+    api.add_resource(strichliste.views.UserTransactionList, '/user/<int:user_id>/transaction')
+    api.add_resource(strichliste.views.UserTransaction, '/user/<int:user_id>/transaction/<int:transaction_id>')
+    api.add_resource(strichliste.views.Transaction, '/transaction')
 
     db.create_all(app=app)
     app.run(port=8080, debug=True)

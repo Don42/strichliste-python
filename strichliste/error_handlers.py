@@ -1,5 +1,5 @@
 from flask import current_app, request
-from endpoints import make_error_response
+from strichliste.views import make_error_response
 
 
 def page_not_found(e):

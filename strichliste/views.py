@@ -1,16 +1,87 @@
+from datetime import datetime, timedelta
+
+import flask
 import sqlalchemy.exc
-from flask import current_app
+from flask import current_app, jsonify
 from flask_restful import Resource
 from werkzeug.exceptions import BadRequest
 
-import strichliste.middleware as middleware
-import strichliste.models as models
+import strichliste.middleware
 from database import db
-from endpoints import list_parser, user_parser, transaction_parser, make_error_response, make_response
+from strichliste import middleware, models
 from strichliste.config import Config
 
+from flask_restful import reqparse
 
-class UserListV2(Resource):
+user_parser = reqparse.RequestParser()
+user_parser.add_argument('name', type=str, location='json')
+user_parser.add_argument('mailAddress', type=str, location='json')
+
+transaction_parser = reqparse.RequestParser()
+transaction_parser.add_argument('value', location='json')
+
+list_parser = reqparse.RequestParser()
+list_parser.add_argument('offset', type=int, location='args', default=None)
+list_parser.add_argument('limit', type=int, location='args', default=None)
+
+HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
+
+
+class Settings(Resource):
+
+    def get(self):
+        config = Config()
+        return make_response({'boundaries': {'account': {'upper': config.upper_account_boundary,
+                                                         'lower': config.lower_account_boundary},
+                                             'transaction': {'upper': config.upper_transaction_boundary,
+                                                             'lower': config.lower_transaction_boundary}
+                                             }
+                              }, 200)
+
+
+class Metrics(Resource):
+
+    def get(self):
+        today = datetime.utcnow().date()
+        data = dict(today=today.isoformat())
+
+        data['countTransactions'] = models.Transaction.query.count()
+        data['overallBalance'] = strichliste.middleware.get_global_balance()
+        data['countUsers'] = models.User.query.count()
+        data['avgBalance'] = strichliste.middleware.get_average_balance()
+        data['days'] = [strichliste.middleware.get_day_metrics(today - timedelta(days=x)) for x in range(3, -1, -1)]
+        return make_response(data, 200)
+
+
+class UserTransaction(Resource):
+
+    def get(self, user_id, transaction_id):
+        user = models.User.query.get(user_id)
+        if user is None:
+            current_app.logger.warning("Could not find transaction: User ID not found - user_id='{}'".format(user_id))
+            return make_error_response("user {} not found".format(user_id), 404)
+        transaction = models.Transaction.query.get(transaction_id)
+        if transaction is None or transaction.userId != user.id:
+            current_app.logger.warning(("Could not find transaction: User ID does not match - "
+                                        "user_id='{}', transaction_id='{}'").format(user_id, transaction_id))
+            return make_error_response("transaction {} not found".format(transaction_id), 404)
+        return make_response(transaction.dict(), 200)
+
+
+class Transaction(Resource):
+
+    def get(self):
+        args = list_parser.parse_args()
+        limit = args.get('limit')
+        offset = args.get('offset')
+        count = models.Transaction.query.count()
+        result = models.Transaction.query.offset(offset).limit(limit).all()
+        entries = [x.dict() for x in result]
+        return make_response({'overallCount': count, 'limit': limit,
+                              'offset': offset, 'entries': entries}, 200)
+
+
+class UserList(Resource):
 
     def get(self):
         args = list_parser.parse_args()
@@ -38,7 +109,7 @@ class UserListV2(Resource):
                               'balance': 0, 'lastTransaction': None}, 201)
 
 
-class UserV2(Resource):
+class User(Resource):
 
     def get(self, user_id):
         try:
@@ -48,7 +119,7 @@ class UserV2(Resource):
             return make_error_response("user {} not found".format(user_id), 404)
 
 
-class UserTransactionListV2(Resource):
+class UserTransactionList(Resource):
 
     def get(self, user_id):
         args = list_parser.parse_args()
@@ -137,3 +208,14 @@ class UserTransactionListV2(Resource):
 
         return make_response(transaction.dict(), 201)
 
+
+def make_error_response(msg: str, code: int = 400):
+    return make_response({'message': msg}, code)
+
+
+def make_response(data, code=200, headers=None):
+    resp = flask.make_response(jsonify(data), code)
+    resp.headers.extend(HEADERS)
+    if headers is not None:
+        resp.headers.extend(headers)
+    return resp
