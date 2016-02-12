@@ -33,7 +33,7 @@ class User(db.Model):
         return ret.createDate.isoformat() if ret is not None else None
 
     def __repr__(self):
-        return "User: id: {id}, name: {name}".format(id=self.id, name=self.name)
+        return "<User: id: {id}, name: {name}>".format(id=self.id, name=self.name)
 
     def dict(self):
         return {'id': self.id, 'name': self.name, 'balance': self.balance,
@@ -51,6 +51,9 @@ class Transaction(db.Model):
     def dict(self):
         return {'id': self.id, 'userId': self.userId,
                 'value': self.value, 'createDate': self.createDate.isoformat()}
+
+    def __repr__(self):
+        return "<Transaction: User: {user}, Value: {value}>".format(user=self.user.name, value=self.value)
 
 
 class Meta(db.Model):
