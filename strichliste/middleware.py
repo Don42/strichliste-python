@@ -1,9 +1,14 @@
+import datetime
+import decimal
+
+import sqlalchemy as sa
 from flask import current_app
 
 import sqlalchemy.exc
 
 from strichliste import models
 from database import db
+from strichliste.models import Transaction, User
 
 
 class DuplicateUser(Exception):
@@ -53,3 +58,46 @@ def insert_user(name, email=''):
         raise DuplicateUser(user.name)
     return user
 
+
+def get_global_balance():
+    ret = db.session.query(sa.func.sum(Transaction.value)).first()
+    if ret[0] is None:
+        ret = 0
+    else:
+        ret = ret[0]
+    return ret
+
+
+def get_average_balance():
+    user_count = User.query.count()
+    if user_count <= 0:
+        return 0
+    global_balance = decimal.Decimal(get_global_balance())
+    avg = decimal.Decimal(global_balance / user_count)
+    return int(avg.to_integral_value(decimal.ROUND_05UP))
+
+
+def get_day_metrics(date: datetime.date):
+    daily_transactions = Transaction.query.filter(Transaction.createDate >= date,
+                                                  Transaction.createDate <= date + datetime.timedelta(days=1)).all()
+    ret = {'date': date.isoformat(),
+           'overallNumber': len(daily_transactions),
+           'distinctUsers': len(set((x.userId for x in daily_transactions))),
+           'dayBalance': sum((x.value for x in daily_transactions)),
+           'dayBalancePositive': sum((x.value if x.value > 0 else 0 for x in daily_transactions)),
+           'dayBalanceNegative': sum((x.value if x.value < 0 else 0 for x in daily_transactions))
+           }
+    return ret
+
+
+def get_day_metrics_float(date: datetime.date):
+    daily_transactions = Transaction.query.filter(Transaction.createDate >= date,
+                                                  Transaction.createDate <= date + datetime.timedelta(days=1)).all()
+    ret = {'date': date.isoformat(),
+           'overallNumber': len(daily_transactions),
+           'distinctUsers': len(set((x.userId for x in daily_transactions))),
+           'dayBalance': sum((x.value for x in daily_transactions)) / 100,
+           'dayBalancePositive': sum((x.value if x.value > 0 else 0 for x in daily_transactions)) / 100,
+           'dayBalanceNegative': sum((x.value if x.value < 0 else 0 for x in daily_transactions)) / 100
+           }
+    return ret
