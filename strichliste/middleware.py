@@ -3,6 +3,12 @@ from flask import current_app
 import sqlalchemy.exc
 
 from strichliste import models
+from database import db
+
+
+class DuplicateUser(Exception):
+    def __init__(self, user_name):
+        self.user_name = user_name
 
 
 def get_users_transactions(user_id, limit=None, offset=None):
@@ -37,4 +43,14 @@ def get_user(user_id):
         current_app.logger.error("Unexpected SQLAlchemyError: {error} - user_id='{user_id}".format(error=e,
                                                                                                    user_id=user_id))
         raise
+
+
+def insert_user(name, email=''):
+    try:
+        user = models.User(name=name, mailAddress=email)
+        db.session.add(user)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        raise DuplicateUser(user.name)
+    return user
 

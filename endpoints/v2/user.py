@@ -27,20 +27,15 @@ class UserListV2(Resource):
             current_app.logger.warning("Could not create user: name missing")
             return make_error_response("name missing", 400)
 
-        user = models.User(name=name, mailAddress=mail_address)
         try:
-            db.session.add(user)
-            db.session.commit()
+            user = middleware.insert_user(name, mail_address)
             current_app.logger.info("User created - user_id='{user_id}', name='{name}'".format(user_id=user.id,
                                                                                                name=user.name))
-        except sqlalchemy.exc.IntegrityError:
-            current_app.logger.warning("Could not create duplicate user - user='{}'".format(user.name))
-            return make_error_response("user {} already exists".format(user.name), 409)
+        except middleware.DuplicateUser as e:
+            return make_error_response("user {} already exists".format(e.user_name), 409)
 
-        return make_response({'id': user.id, 'name': user.name,
-                              'mailAddress': user.mailAddress,
-                              'balance': 0, 'lastTransaction': None},
-                             201)
+        return make_response({'id': user.id, 'name': user.name, 'mailAddress': user.mailAddress,
+                              'balance': 0, 'lastTransaction': None}, 201)
 
 
 class UserV2(Resource):
