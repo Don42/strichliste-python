@@ -6,9 +6,8 @@ from flask import current_app
 
 import sqlalchemy.exc
 
-from strichliste import models
-from database import db
-from strichliste.models import Transaction, User
+from strichliste.models import User, Transaction
+from strichliste.database import db
 
 
 class DuplicateUser(Exception):
@@ -17,18 +16,18 @@ class DuplicateUser(Exception):
 
 
 def get_users_transactions(user_id, limit=None, offset=None):
-    user = models.User.query.get(user_id)
+    user = User.query.get(user_id)
     if user is None:
         raise KeyError
-    count = models.Transaction.query.filter(models.Transaction.userId == user.id).count()
-    result = models.Transaction.query.filter(models.Transaction.userId == user.id).offset(offset).limit(limit).all()
+    count = Transaction.query.filter(Transaction.userId == user.id).count()
+    result = Transaction.query.filter(Transaction.userId == user.id).offset(offset).limit(limit).all()
     entries = [x.dict() for x in result]
     return {'overallCount': count, 'limit': limit, 'offset': offset, 'entries': entries}
 
 
 def get_users(limit, offset):
-    count = models.User.query.count()
-    result = models.User.query.offset(offset).limit(limit).all()
+    count = User.query.count()
+    result = User.query.offset(offset).limit(limit).all()
     entries = [x.dict() for x in result]
     users = {'overallCount': count, 'limit': limit, 'offset': offset, 'entries': entries}
     return users
@@ -36,7 +35,7 @@ def get_users(limit, offset):
 
 def get_user(user_id):
     try:
-        user = models.User.query.get(user_id)
+        user = User.query.get(user_id)
         if user is None:
             current_app.logger.warning("Could not find user: User ID not found - user_id='{}'".format(user_id))
             raise KeyError
@@ -51,7 +50,7 @@ def get_user(user_id):
 
 def insert_user(name, email=''):
     try:
-        user = models.User(name=name, mailAddress=email)
+        user = User(name=name, mailAddress=email)
         db.session.add(user)
         db.session.commit()
     except sqlalchemy.exc.IntegrityError:

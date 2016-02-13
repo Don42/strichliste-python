@@ -2,7 +2,7 @@ import logging
 import logging.handlers
 import time
 
-from database import db
+from strichliste.database import db
 from flask import Flask
 from strichliste import error_handlers
 from strichliste.config import Config

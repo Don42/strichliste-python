@@ -3,7 +3,7 @@ import datetime
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 
-from database import db
+from strichliste.database import db
 
 
 class User(db.Model):

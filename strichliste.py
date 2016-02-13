@@ -1,7 +1,7 @@
 from flask_restful import Api
 
 import strichliste.views
-from database import db
+from strichliste.database import db
 from strichliste.flask import create_app
 
 

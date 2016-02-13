@@ -7,7 +7,7 @@ from flask_restful import Resource
 from werkzeug.exceptions import BadRequest
 
 import strichliste.middleware
-from database import db
+from strichliste.database import db
 from strichliste import middleware, models
 from strichliste.config import Config
 
