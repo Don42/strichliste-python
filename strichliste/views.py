@@ -1,17 +1,15 @@
 from datetime import datetime, timedelta
 
 import flask
-import sqlalchemy.exc
 from flask import current_app, jsonify
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from werkzeug.exceptions import BadRequest
 
 import strichliste.middleware
-from strichliste.database import db
 from strichliste import middleware, models
 from strichliste.config import Config
+from strichliste.database import db
 
-from flask_restful import reqparse
 
 user_parser = reqparse.RequestParser()
 user_parser.add_argument('name', type=str, location='json')
@@ -198,7 +196,7 @@ class UserTransactionList(Resource):
             current_app.logger.info("Transaction created - id='{id}', user_id='{user_id}'".format(
                     id=transaction.id,
                     user_id=transaction.userId))
-        except sqlalchemy.exc.IntegrityError as e:
+        except middleware.DatabaseError as e:
             current_app.logger.error("Could not create transaction: {e} - user_id='{user_id}, value='{value}''".format(
                 e=e,
                 user_id=user.id,
@@ -219,3 +217,4 @@ def make_response(data, code=200, headers=None):
     if headers is not None:
         resp.headers.extend(headers)
     return resp
+

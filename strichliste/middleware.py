@@ -15,6 +15,10 @@ class DuplicateUser(Exception):
         self.user_name = user_name
 
 
+class DatabaseError(Exception):
+    pass
+
+
 def get_users_transactions(user_id, limit=None, offset=None):
     user = User.query.get(user_id)
     if user is None:
@@ -45,7 +49,7 @@ def get_user(user_id):
     except sqlalchemy.exc.SQLAlchemyError as e:
         current_app.logger.error("Unexpected SQLAlchemyError: {error} - user_id='{user_id}".format(error=e,
                                                                                                    user_id=user_id))
-        raise
+        raise DatabaseError("SQLAlchemyError: {error}".format(error=e))
 
 
 def insert_user(name, email=''):
@@ -100,3 +104,4 @@ def get_day_metrics_float(date: datetime.date):
            'dayBalanceNegative': sum((x.value if x.value < 0 else 0 for x in daily_transactions)) / 100
            }
     return ret
+
