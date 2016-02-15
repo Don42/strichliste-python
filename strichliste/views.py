@@ -25,16 +25,20 @@ list_parser.add_argument('limit', type=int, location='args', default=None)
 HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
 
 
+def make_error_response(msg: str, code: int = 400):
+    return {'message': msg}, code
+
+
 class Settings(Resource):
 
     def get(self):
         config = Config()
-        return make_response({'boundaries': {'account': {'upper': config.upper_account_boundary,
-                                                         'lower': config.lower_account_boundary},
-                                             'transaction': {'upper': config.upper_transaction_boundary,
-                                                             'lower': config.lower_transaction_boundary}
-                                             }
-                              }, 200)
+        return {'boundaries': {'account': {'upper': config.upper_account_boundary,
+                                           'lower': config.lower_account_boundary},
+                               'transaction': {'upper': config.upper_transaction_boundary,
+                                               'lower': config.lower_transaction_boundary}
+                               }
+                }, 200
 
 
 class Metrics(Resource):
@@ -48,7 +52,7 @@ class Metrics(Resource):
         data['countUsers'] = models.User.query.count()
         data['avgBalance'] = strichliste.middleware.get_average_balance()
         data['days'] = [strichliste.middleware.get_day_metrics(today - timedelta(days=x)) for x in range(3, -1, -1)]
-        return make_response(data, 200)
+        return data, 200
 
 
 class UserTransaction(Resource):
@@ -63,7 +67,7 @@ class UserTransaction(Resource):
             current_app.logger.warning(("Could not find transaction: User ID does not match - "
                                         "user_id='{}', transaction_id='{}'").format(user_id, transaction_id))
             return make_error_response("transaction {} not found".format(transaction_id), 404)
-        return make_response(transaction.dict(), 200)
+        return transaction.dict(), 200
 
 
 class Transaction(Resource):
@@ -75,8 +79,8 @@ class Transaction(Resource):
         count = models.Transaction.query.count()
         result = models.Transaction.query.offset(offset).limit(limit).all()
         entries = [x.dict() for x in result]
-        return make_response({'overallCount': count, 'limit': limit,
-                              'offset': offset, 'entries': entries}, 200)
+        return {'overallCount': count, 'limit': limit,
+                'offset': offset, 'entries': entries}, 200
 
 
 class UserList(Resource):
@@ -86,7 +90,7 @@ class UserList(Resource):
         limit = args.get('limit')
         offset = args.get('offset')
         users = middleware.get_users(limit, offset)
-        return make_response(users, 200)
+        return users, 200
 
     def post(self):
         args = user_parser.parse_args()
@@ -103,8 +107,8 @@ class UserList(Resource):
         except middleware.DuplicateUser as e:
             return make_error_response("user {} already exists".format(e.user_name), 409)
 
-        return make_response({'id': user.id, 'name': user.name, 'mailAddress': user.mailAddress,
-                              'balance': 0, 'lastTransaction': None}, 201)
+        return {'id': user.id, 'name': user.name, 'mailAddress': user.mailAddress,
+                'balance': 0, 'lastTransaction': None}, 201
 
 
 class User(Resource):
@@ -112,7 +116,7 @@ class User(Resource):
     def get(self, user_id):
         try:
             user = middleware.get_user(user_id)
-            return make_response(user, 200)
+            return user, 200
         except KeyError:
             return make_error_response("user {} not found".format(user_id), 404)
 
@@ -128,7 +132,7 @@ class UserTransactionList(Resource):
         except KeyError:
             current_app.logger.warning("User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
-        return make_response(transactions, 200)
+        return transactions, 200
 
     def post(self, user_id):
         try:
@@ -204,17 +208,5 @@ class UserTransactionList(Resource):
             ))
             return make_error_response("user {} not found".format(user_id), 404)
 
-        return make_response(transaction.dict(), 201)
-
-
-def make_error_response(msg: str, code: int = 400):
-    return make_response({'message': msg}, code)
-
-
-def make_response(data, code=200, headers=None):
-    resp = flask.make_response(jsonify(data), code)
-    resp.headers.extend(HEADERS)
-    if headers is not None:
-        resp.headers.extend(headers)
-    return resp
+        return transaction.dict(), 201
 
