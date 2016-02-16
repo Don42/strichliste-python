@@ -4,7 +4,6 @@ from flask import current_app
 from flask_restful import Resource, reqparse
 from werkzeug.exceptions import BadRequest
 
-import strichliste.middleware
 from strichliste import middleware, models
 from strichliste.config import Config
 
