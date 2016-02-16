@@ -1,15 +1,12 @@
 from datetime import datetime, timedelta
 
-import flask
-from flask import current_app, jsonify
+from flask import current_app
 from flask_restful import Resource, reqparse
 from werkzeug.exceptions import BadRequest
 
 import strichliste.middleware
 from strichliste import middleware, models
 from strichliste.config import Config
-from strichliste.database import db
-
 
 user_parser = reqparse.RequestParser()
 user_parser.add_argument('name', type=str, location='json')
@@ -25,12 +22,17 @@ list_parser.add_argument('limit', type=int, location='args', default=None)
 HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
 
 
-def make_error_response(msg: str, code: int = 400):
-    return {'message': msg}, code
+def make_error_response(msg, code: int = 400):
+    """
+
+    :param msg: Should be either an exception object or a string
+    :param code: HTTP Response Code
+    :return: Result pair to return to the requesting client
+    """
+    return {'message': str(msg)}, code
 
 
 class Settings(Resource):
-
     def get(self):
         config = Config()
         return {'boundaries': {'account': {'upper': config.upper_account_boundary,
@@ -42,7 +44,6 @@ class Settings(Resource):
 
 
 class Metrics(Resource):
-
     def get(self):
         today = datetime.utcnow().date()
         data = dict(today=today.isoformat())
@@ -56,7 +57,6 @@ class Metrics(Resource):
 
 
 class UserTransaction(Resource):
-
     def get(self, user_id, transaction_id):
         user = models.User.query.get(user_id)
         if user is None:
@@ -71,7 +71,6 @@ class UserTransaction(Resource):
 
 
 class Transaction(Resource):
-
     def get(self):
         args = list_parser.parse_args()
         limit = args.get('limit')
@@ -84,7 +83,6 @@ class Transaction(Resource):
 
 
 class UserList(Resource):
-
     def get(self):
         args = list_parser.parse_args()
         limit = args.get('limit')
@@ -112,7 +110,6 @@ class UserList(Resource):
 
 
 class User(Resource):
-
     def get(self, user_id):
         try:
             user = middleware.get_user(user_id)
@@ -122,7 +119,6 @@ class User(Resource):
 
 
 class UserTransactionList(Resource):
-
     def get(self, user_id):
         args = list_parser.parse_args()
         limit = args.get('limit')
@@ -149,64 +145,36 @@ class UserTransactionList(Resource):
             current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("not a number: {}".format(args['value']), 400)
 
-        config = Config()
-        max_transaction = config.upper_transaction_boundary
-        min_transaction = config.lower_transaction_boundary
-        if value == 0:
+        try:
+            transaction = middleware.insert_transaction(user_id, value)
+        except middleware.TransactionValueZero as e:
             current_app.logger.warning("Could not create transaction: Invalid input")
-            return make_error_response("value must not be zero", 400)
-        elif value > max_transaction:
-            current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
-            return make_error_response(
-                    "transaction value of {} exceeds the transaction maximum of {}".format(value, max_transaction),
-                    403)
-        elif value < min_transaction:
-            current_app.logger.warning("Could not create transaction: Transaction boundary exceeded")
-            return make_error_response(
-                    "transaction value of {} falls below the transaction minimum of {}".format(value, min_transaction),
-                    403)
-
-        user = models.User.query.get(user_id)
-        if user is None:
+            return make_error_response(e, 400)
+        except middleware.TransactionValueHigh as e:
+            current_app.logger.warning("Could not create transaction: Transaction high boundary exceeded")
+            return make_error_response(e, 403)
+        except middleware.TransactionValueLow as e:
+            current_app.logger.warning("Could not create transaction: Transaction low boundary exceeded")
+            return make_error_response(e, 403)
+        except KeyError:
             current_app.logger.warning("Could not create transaction: User ID not found - user_id='{}'".format(user_id))
             return make_error_response("user {} not found".format(user_id), 404)
-
-        max_account = config.upper_account_boundary
-        min_account = config.lower_account_boundary
-        new_balance = user.balance + value
-        if new_balance > max_account:
+        except middleware.TransactionResultHigh as e:
             current_app.logger.warning("Could not create transaction: Account boundary exceeded")
-            return make_error_response(
-                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
-                     "which goes beyond the upper account limit of {limit}".format(trans_val=value,
-                                                                                   new=new_balance,
-                                                                                   limit=max_account)),
-                    403
-            )
-        elif new_balance < min_account:
+            return make_error_response(e, 403)
+        except middleware.TransactionResultLow as e:
             current_app.logger.warning("Could not create transaction: Account boundary exceeded")
-            return make_error_response(
-                    ("transaction value of {trans_val} leads to an overall account balance of {new} "
-                     "which goes below the lower account limit of {limit}").format(trans_val=value,
-                                                                                   new=new_balance,
-                                                                                   limit=min_account),
-                    403
-            )
-
-        transaction = models.Transaction(userId=user_id, value=value)
-        try:
-            db.session.add(transaction)
-            db.session.commit()
-            current_app.logger.info("Transaction created - id='{id}', user_id='{user_id}'".format(
-                    id=transaction.id,
-                    user_id=transaction.userId))
+            return make_error_response(e, 403)
         except middleware.DatabaseError as e:
             current_app.logger.error("Could not create transaction: {e} - user_id='{user_id}, value='{value}''".format(
                 e=e,
-                user_id=user.id,
-                value=transaction.userId
+                user_id=user_id,
+                value=value
             ))
-            return make_error_response("user {} not found".format(user_id), 404)
+            return make_error_response("Database Error", 403)
+        else:
+            current_app.logger.info("Transaction created - id='{id}', user_id='{user_id}'".format(
+                id=transaction.id,
+                user_id=transaction.userId))
 
         return transaction.dict(), 201
-
