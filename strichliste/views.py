@@ -12,7 +12,7 @@ user_parser.add_argument('name', type=str, location='json')
 user_parser.add_argument('mailAddress', type=str, location='json')
 
 transaction_parser = reqparse.RequestParser()
-transaction_parser.add_argument('value', location='json')
+transaction_parser.add_argument('value', type=int, location='json')
 
 list_parser = reqparse.RequestParser()
 list_parser.add_argument('offset', type=int, location='args', default=None)
@@ -138,11 +138,7 @@ class UserTransactionList(Resource):
         if 'value' not in args or args['value'] is None:
             current_app.logger.warning("Could not create transaction: Invalid input")
             return make_error_response("value missing", 400)
-        try:
-            value = int(args['value'])
-        except ValueError:
-            current_app.logger.warning("Could not create transaction: Invalid input")
-            return make_error_response("not a number: {}".format(args['value']), 400)
+        value = args['value']
 
         try:
             transaction = middleware.insert_transaction(user_id, value)

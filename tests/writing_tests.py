@@ -62,7 +62,7 @@ def test_04_create_transaction_fail_nan():
     assert r.headers['Content-Type'] == 'application/json'
     result = json.loads(r.text)
     assert 'message' in result
-    assert result['message'] == "not a number: foo"
+    assert result['message'] == "Error parsing json"
 
 
 def test_05_create_transaction_fail_zero():
