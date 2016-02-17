@@ -48,10 +48,10 @@ class Metrics(Resource):
         data = dict(today=today.isoformat())
 
         data['countTransactions'] = models.Transaction.query.count()
-        data['overallBalance'] = strichliste.middleware.get_global_balance()
+        data['overallBalance'] = middleware.get_global_balance()
         data['countUsers'] = models.User.query.count()
-        data['avgBalance'] = strichliste.middleware.get_average_balance()
-        data['days'] = [strichliste.middleware.get_day_metrics(today - timedelta(days=x)) for x in range(3, -1, -1)]
+        data['avgBalance'] = middleware.get_average_balance()
+        data['days'] = [middleware.get_day_metrics(today - timedelta(days=x)) for x in range(3, -1, -1)]
         return data, 200
 
 
